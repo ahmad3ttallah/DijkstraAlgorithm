@@ -1,0 +1,231 @@
+//
+//  DijkstraAlgorith.swift
+//
+//  Created by Ahmed Abd-elbaky [ http://hope-sun.net ] on 17/05/16.
+//  Copyright © 2016. All rights reserved.
+//
+
+import UIKit
+
+class Vertex : Hashable {
+    var id: String
+    var name: String
+    var hashValue:Int
+    var tag: AnyObject!
+    
+    init(id: String, name: String) {
+        self.id = id
+        self.name = name
+        self.hashValue = id.hashValue
+    }
+    
+    func getId() -> String {
+        return self.id
+    }
+    
+    func getName() -> String{
+        return self.name
+    }
+}
+
+func == (vertexA: Vertex, vertexB: Vertex) -> Bool {
+    return vertexA.hashValue == vertexB.hashValue
+}
+
+class Edge {
+    
+    var id: String
+    var source: Vertex
+    var destination: Vertex
+    var weight: Int
+    
+    init(id: String, source: Vertex, destination: Vertex, weight: Int) {
+        self.id = id
+        self.source = source
+        self.destination = destination
+        self.weight = weight
+    }
+    
+    func getId() -> String{
+        return self.id
+    }
+    
+    func getDestination() -> Vertex{
+        return self.destination
+    }
+    
+    func getSource() -> Vertex{
+        return self.source
+    }
+    
+    func getWeight() -> Int{
+        return self.weight
+    }
+}
+
+class Graph {
+    
+    var vertexes: [Vertex]
+    var edges: [Edge]
+    
+    init(vertexes: [Vertex], edges: [Edge]) {
+        self.vertexes = vertexes
+        self.edges = edges
+    }
+    
+    func getVertexes() -> [Vertex]{
+        return self.vertexes
+    }
+    
+    func getEdges() -> [Edge]{
+        return self.edges
+    }
+    
+}
+
+class DijkstraAlgorithm {
+    
+    var nodes: [Vertex]!
+    var edges: [Edge]!
+    var settledNodes: Set<Vertex>!
+    var unSettledNodes: Set<Vertex>!
+    var predecessors: Dictionary<Vertex, Vertex>!
+    var distance: Dictionary<Vertex, Int>!
+    
+    init(graph: Graph) {
+        self.nodes = [Vertex]()
+        self.nodes.appendContentsOf(graph.getVertexes())
+        self.edges = [Edge]()
+        self.edges.appendContentsOf(graph.getEdges())
+    }
+    
+    func execute(source: Vertex) {
+        self.settledNodes = Set<Vertex>()
+        self.unSettledNodes = Set<Vertex>()
+        self.distance = Dictionary<Vertex, Int>()
+        self.predecessors = Dictionary<Vertex, Vertex>()
+        self.distance[source] = 0
+        self.unSettledNodes.insert(source)
+        while (unSettledNodes.count > 0) {
+            let node: Vertex = self.getMinimum(unSettledNodes)
+            self.settledNodes.insert(node)
+            self.unSettledNodes.remove(node)
+            self.findMinimalDistances(node)
+        }
+    }
+    
+    func findMinimalDistances(node: Vertex) {
+        let adjacentNodes: [Vertex] = self.getNeighbors(node)
+        for target in adjacentNodes {
+            if (self.getShortestDistance(target) > self.getShortestDistance(node) + self.getDistance(node, target: target)) {
+                self.distance[target] = self.getShortestDistance(node) + self.getDistance(node, target: target)
+                self.predecessors[target] = node
+                self.unSettledNodes.insert(target)
+            }
+        }
+    }
+    
+    func getDistance(node: Vertex, target: Vertex) -> Int!{
+        for edge in edges {
+            if (edge.getSource() == node && edge.getDestination() == target) {
+                return edge.getWeight()
+            }
+        }
+        return nil
+    }
+    
+    func getNeighbors(node: Vertex) -> [Vertex] {
+        var neighbors: [Vertex] = [Vertex]()
+        for edge in edges {
+            if (edge.getSource() == node && !self.isSettled(edge.getDestination())) {
+                neighbors.append(edge.getDestination())
+            }
+        }
+        return neighbors
+    }
+    
+    func getMinimum(vertexes: Set<Vertex>) -> Vertex{
+        var minimum: Vertex!
+        for vertex in vertexes {
+            if (minimum == nil) {
+                minimum = vertex
+            } else {
+                if (getShortestDistance(vertex) < self.getShortestDistance(minimum)) {
+                    minimum = vertex
+                }
+            }
+        }
+        return minimum
+    }
+    
+    func isSettled(vertex: Vertex) -> Bool{
+        return self.settledNodes.contains(vertex)
+    }
+    
+    func getShortestDistance(destination: Vertex) -> Int{
+        let d: Int! = self.distance[destination]
+        if (d == nil) {
+            return Int.max
+        } else {
+            return d
+        }
+    }
+    
+    func getPath(target: Vertex) -> [Vertex]! {
+        var path: [Vertex] = [Vertex]()
+        var step: Vertex = target
+        // check if a path exists
+        if let _ = predecessors[step]{
+            path.append(step)
+            while let _ = predecessors[step] {
+                step = predecessors[step]!
+                path.append(step)
+            }
+            // Put it into the correct order
+            path = path.reverse()
+            return path
+        }else{
+            return nil
+        }
+    }
+}
+
+// Testing the algorithm ------------------------------------------------------------------------------------------
+
+var nodes = [Vertex]()
+var edges = [Edge]()
+
+func addEdge(laneId: String, source: Int, destination: Int, weight: Int) {
+    let lane: Edge = Edge(id: laneId, source: nodes[source], destination: nodes[destination], weight: weight)
+    edges.append(lane)
+}
+
+for i in 0...12{
+    let location: Vertex = Vertex(id: "The_Node_Number_\(i)", name: "The_Node_Number_\(i)")
+    nodes.append(location)
+}
+    
+addEdge("The_Edge_Number_0", source: 0, destination: 1, weight: 85)
+addEdge("The_Edge_Number_1", source: 0, destination: 2, weight: 217)
+addEdge("The_Edge_Number_2", source: 0, destination: 4, weight: 173)
+addEdge("The_Edge_Number_3", source: 2, destination: 6, weight: 186)
+addEdge("The_Edge_Number_4", source: 2, destination: 7, weight: 103)
+addEdge("The_Edge_Number_5", source: 3, destination: 7, weight: 183)
+addEdge("The_Edge_Number_6", source: 5, destination: 8, weight: 250)
+addEdge("The_Edge_Number_7", source: 8, destination: 9, weight: 84)
+addEdge("The_Edge_Number_8", source: 7, destination: 9, weight: 167)
+addEdge("The_Edge_Number_9", source: 4, destination: 9, weight: 502)
+addEdge("The_Edge_Number_10", source: 9, destination: 10, weight: 40)
+addEdge("The_Edge_Number_11", source: 1, destination: 10, weight: 600)
+addEdge("The_Edge_Number_12", source: 2, destination: 3, weight: 700)
+
+// Lets get the shortest path from The_Edge_Number_3 to The_Edge_Number_10 for example
+let graph: Graph = Graph(vertexes: nodes, edges: edges)
+let dijkstra: DijkstraAlgorithm = DijkstraAlgorithm(graph: graph)
+var The_Edge_Number_3 = nodes[3]
+var The_Edge_Number_10 = nodes[10]
+dijkstra.execute(The_Edge_Number_3)
+let path: [Vertex] = dijkstra.getPath(The_Edge_Number_10)
+for vertext in path{
+    print(vertext.name)
+}
